@@ -4,7 +4,6 @@ import 'package:task_manager_app/constants/app_constants.dart';
 
 class NetworkHelper {
   late Dio dio;
-
   NetworkHelper() {
     BaseOptions baseOptions = BaseOptions(
         baseUrl: ApplicationConstants.baseUrl,
@@ -19,13 +18,13 @@ class NetworkHelper {
         },
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
         });
     dio = Dio(baseOptions);
   }
 
   Future<Response?> get(String url, {Map<String, dynamic>? parameters}) async {
     try {
+      print(dio.options.baseUrl+url);
       Response response = await dio.get(url, queryParameters: parameters);
       return response;
     } catch (e) {
@@ -36,7 +35,9 @@ class NetworkHelper {
 
   Future<Response?> post(String url, {Map<String, dynamic>? data}) async {
     try {
+      print(dio.options.baseUrl+url);
       Response response = await dio.post(url, data: data);
+      print(response);
       return response;
     } catch (e) {
       print(e.toString());
@@ -64,9 +65,9 @@ class NetworkHelper {
     }
   }
 
-  Future<Response?> delete(String url, {Map<String, dynamic>? data}) async {
+  Future<Response?> delete(String url) async {
     try {
-      Response response = await dio.delete(url, data: data);
+      Response response = await dio.delete(url);
       return response;
     } catch (e) {
       print(e.toString());

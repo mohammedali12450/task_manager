@@ -12,7 +12,7 @@ class LoginRepo {
   Future<LoginResponse?> login(Map<String,dynamic> data) async {
     try {
       Response? response = await networkHelper.post(ApplicationConstants.login,data: data);
-      print("response is ${response!.data}");
+      print("response is ${response}");
       if(response!.statusCode == 200){
         Map<String,dynamic> convertFromJson = response.data;
         print("in success : $convertFromJson");
@@ -26,7 +26,7 @@ class LoginRepo {
       }
     } on DioException catch(e){
       print(e.toString());
-      Map<String,dynamic> response = {'error':e.toString()};
+      Map<String,dynamic> response = {'message':e.toString()};
       print("in exception : $response");
       LoginResponse loginResponse = LoginResponse.onError(response);
       return loginResponse;

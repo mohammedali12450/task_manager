@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_manager_app/core/storage/user_shared_preference.dart';
-import 'package:task_manager_app/modules/business_logic/navigation_bloc/navigation_bloc.dart';
+import 'package:task_manager_app/modules/business_logic/add_todo_logic/add_todo_blco.dart';
+import 'package:task_manager_app/modules/business_logic/delete_todo_logic/delete_todo_bloc.dart';
+import 'package:task_manager_app/modules/business_logic/my_todo_logic/my_todos_bloc.dart';
+import 'package:task_manager_app/modules/business_logic/pagination_bloc/pagination_bloc.dart';
+import 'package:task_manager_app/modules/business_logic/todos_logic/all_todos_bloc.dart';
 import 'core/storage/shared_preference.dart';
-import 'modules/business_logic/create_process_bloc/create_process_bloc.dart';
 import 'modules/business_logic/login_logic/login_bloc.dart';
-import 'modules/business_logic/pagination_bloc/pagination_bloc.dart';
-import 'modules/business_logic/user_screen_bloc/user_screen_bloc.dart';
 import 'modules/view/screens/home_page.dart';
 import 'modules/view/screens/login_screen.dart';
 
@@ -26,9 +27,10 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => LoginBloc()),
         BlocProvider(create: (_) => PaginationBloc()),
-        BlocProvider(create: (_) => UpdateBloc()),
-        BlocProvider(create: (_) => CreateProcessBloc()),
-        BlocProvider(create: (_) => NavigationBloc()),
+        BlocProvider(create: (_) => AllTodosBloc()),
+        BlocProvider(create: (_) => DeleteTodoBloc()),
+        BlocProvider(create: (_) => MyTodosBloc()),
+        BlocProvider(create: (_) => AddTodoBloc()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

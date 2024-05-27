@@ -1,17 +1,23 @@
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:number_pagination/number_pagination.dart';
 import 'package:task_manager_app/modules/business_logic/cubit/app_cubit.dart';
-import 'package:task_manager_app/modules/business_logic/navigation_bloc/navigation_bloc.dart';
-import 'package:task_manager_app/modules/business_logic/navigation_bloc/navigation_events.dart';
-import 'package:task_manager_app/modules/business_logic/navigation_bloc/navigation_states.dart';
-import 'package:task_manager_app/modules/view/screens/user_screen.dart';
+import 'package:task_manager_app/modules/business_logic/delete_todo_logic/deleteTodoEvents.dart';
+import 'package:task_manager_app/modules/business_logic/delete_todo_logic/delete_todo_bloc.dart';
+import 'package:task_manager_app/modules/business_logic/delete_todo_logic/delete_todo_states.dart';
+import 'package:task_manager_app/modules/business_logic/login_logic/login_bloc.dart';
+import 'package:task_manager_app/modules/business_logic/pagination_bloc/pagination_bloc.dart';
+import 'package:task_manager_app/modules/business_logic/pagination_bloc/pagination_states.dart';
+import 'package:task_manager_app/modules/business_logic/todos_logic/all_todos_bloc.dart';
+import 'package:task_manager_app/modules/business_logic/todos_logic/all_todos_events.dart';
+import 'package:task_manager_app/modules/business_logic/todos_logic/all_todos_states.dart';
+import 'package:task_manager_app/modules/data/models/skip_limit.dart';
+import 'package:task_manager_app/modules/view/screens/add_todo.dart';
 
-import '../../business_logic/pagination_bloc/pagination_bloc.dart';
 import '../../business_logic/pagination_bloc/pagination_events.dart';
-import '../../business_logic/pagination_bloc/pagination_states.dart';
-import '../widgets/custom_container.dart';
+import 'my_todos.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -21,109 +27,147 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  late PaginationBloc paginationBloc;
-  late NavigationBloc navigationBloc;
   late AppCubit cubit;
+  late PaginationBloc paginationBloc;
+  late AllTodosBloc allTodosBloc;
+  late DeleteTodoBloc deleteTodoBloc;
+  late LoginBloc loginBloc;
+  int pageNumber = 1;
+
   @override
   void initState() {
-    paginationBloc = BlocProvider.of<PaginationBloc>(context);
-    paginationBloc.add(PaginationFetchEvent(pageNumber: 1));
-    navigationBloc = BlocProvider.of<NavigationBloc>(context);
-    navigationBloc.add(NavigateEvent(pageNumber: 1));
     cubit = AppCubit(1);
+    loginBloc = BlocProvider.of<LoginBloc>(context);
+    paginationBloc = BlocProvider.of<PaginationBloc>(context);
+    allTodosBloc = BlocProvider.of<AllTodosBloc>(context);
+    paginationBloc.add(PaginationFetchEvent(limit: 10, skip: 0));
+    allTodosBloc.add(GetAllTodos());
+    deleteTodoBloc = BlocProvider.of<DeleteTodoBloc>(context);
+    deleteTodoBloc.add(DeleteTodoStartEvent(todoId: 1));
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: () {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => UserScreen(toUpdate: false)));
-          },
+    return SafeArea(
+      child: Scaffold(
+        drawer: Drawer(
+          child: Column(
+            children: [
+              SizedBox(height: 25,),
+              CircleAvatar(
+                backgroundImage: NetworkImage(loginBloc.loginResponse!.image),
+                radius: MediaQuery.of(context).size.width * 0.3,
+              ),
+              SizedBox(height: 25,),
+              Text(loginBloc.loginResponse!.firstName+" "+loginBloc.loginResponse!.lastName),
+              Divider(thickness: 2,),
+              ListTile(title: Text("My Todos",textAlign: TextAlign.center,),onTap: (){
+                Navigator.of(context).push(MaterialPageRoute(builder: (context)=>MyTodos()));
+              },),
+              Divider(thickness: 2,),
+            ],
+          ),
         ),
-        title: const Text("Home Page"),
-        centerTitle: true,
-      ),
-      body: BlocBuilder<PaginationBloc,PaginationStates>(
-        builder:(context,state) {
-          if(state is PaginationSuccessState){
-            return Stack(
-              children: [
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: BlocBuilder<AppCubit,dynamic>(
-                    bloc: cubit,
-                    builder:(_,pageNumber)=> NumberPagination(
-                      onPageChanged: (onPageChanged) {
-                        cubit.setState(onPageChanged);
-                        navigationBloc
-                            .add(NavigateEvent(pageNumber: onPageChanged));
-                      },
-                      pageTotal: paginationBloc.pagination!.totalPages,
-                      pageInit: pageNumber,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: BlocBuilder<NavigationBloc, NavigationStates>(
-                      builder: (context, state) {
-                        if (state is NavigateInProgressState) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        } else if (state is NavigateSuccessState) {
-                          return Column(
-                            children: [
-                              Container(
-                                width: MediaQuery.of(context).size.width,
-                                height: MediaQuery.of(context).size.height * 0.8,
-                                child: ListView.builder(
-                                  itemBuilder: (context, index) => InkWell(
-                                    child: CustomContainer(
-                                      url: paginationBloc.pagination!.data[index].avatar,
-                                      firstName:
-                                      paginationBloc.pagination!.data[index].firstName,
-                                      lastName:
-                                      paginationBloc.pagination!.data[index].lastName,
-                                      email: paginationBloc.pagination!.data[index].email,
-                                    ),
-                                    onTap: () {
-                                      Navigator.of(context).push(MaterialPageRoute(
-                                          builder: (context) => UserScreen(
-                                              toUpdate: true,
-                                              user:
-                                              paginationBloc.pagination!.data[index])));
-                                    },
-                                  ),
-                                  itemCount: paginationBloc.pagination!.perPage,
-                                ),
-                              ),
-
-                            ],
-                          );
-                        }else if (state is NavigateErrorState){
-                          return Center(child: Text(state.message,),);
-                        }
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      }),
-                ),
-
-              ],
+        bottomNavigationBar: BlocBuilder<AllTodosBloc, AllTodosStates>(
+            builder: (context, state) {
+          if (state is AllTodosSuccessState) {
+            return NumberPagination(
+              onPageChanged: (int pageNumber) {
+                //To optimize further, use a package that supports partial updates instead of setState (e.g. riverpod)
+                setState(() {
+                  this.pageNumber = pageNumber;
+                });
+                if (pageNumber == allTodosBloc.todos!.total ~/ 10) {
+                  paginationBloc.add(PaginationFetchEvent(
+                      limit: 19, skip: (pageNumber - 1) * 10));
+                } else {
+                  paginationBloc.add(PaginationFetchEvent(
+                      limit: 10, skip: (pageNumber - 1) * 10));
+                }
+              },
+              pageInit: 1,
+              // picked number when init page
+              colorPrimary: Colors.blueAccent,
+              threshold: 3,
+              colorSub: Colors.white,
+              pageTotal: allTodosBloc.todos!.total ~/ 10,
             );
           }
           return Container();
-        },
+        }),
+        appBar: AppBar(
+          title: const Text("Home Page"),
+          backgroundColor: Colors.blue,
+          actions: [
+            IconButton(
+                onPressed: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => AddNewTodo()));
+                },
+                icon: Icon(Icons.add))
+          ],
+          centerTitle: true,
+        ),
+        body: BlocConsumer<PaginationBloc, PaginationStates>(
+          bloc: paginationBloc,
+          builder: (context, state) {
+            if (state is PaginationInProgressState) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is PaginationSuccessState) {
+              return ListView.builder(
+                  itemCount: paginationBloc.skipLimit!.todos!.length,
+                  itemBuilder: (context, i) {
+                    final item = paginationBloc.skipLimit!.todos![i];
+                    return BlocBuilder<DeleteTodoBloc, DeleteTodoStates>(
+                        builder: (context, state) {
+                      if (state is DeleteTodoSuccessState) {
+                        return Container(
+                          margin: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(color: Colors.red),
+                          child: ListTile(
+                            trailing: IconButton(onPressed: (){
+                              deleteTodoBloc.add(DeleteTodoStartEvent(todoId: paginationBloc.skipLimit!.todos![i].id!));
+                              paginationBloc.add(PaginationFetchEvent(limit: 10, skip: pageNumber));
+                            },icon: Icon(Icons.delete,color: Colors.white,),),
+                            title: Text(
+                                "todo id : ${paginationBloc.skipLimit!.todos![i].id.toString()}"),
+                            subtitle: Text(
+                                paginationBloc.skipLimit!.todos![i].todo!),
+                          ),
+                        );
+                      }
+                      return Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(color: Colors.blue),
+                        child: ListTile(
+                          trailing: IconButton(onPressed: (){
+                            deleteTodoBloc.add(DeleteTodoStartEvent(todoId: paginationBloc.skipLimit!.todos![i].id!));
+                            paginationBloc.add(PaginationFetchEvent(limit: 10, skip: pageNumber));
+                          },icon: Icon(Icons.delete,color: Colors.white,),),
+                          title: Text(
+                              "todo id : ${paginationBloc.skipLimit!.todos![i].id.toString()}"),
+                          subtitle:
+                              Text(paginationBloc.skipLimit!.todos![i].todo!),
+                        ),
+                      );
+                    });
+                  });
+            }
+            return Container();
+          },
+          listener: (context, state) {
+            if (state is PaginationErrorState) {
+              AwesomeDialog(
+                      context: context,
+                      desc: state.message,
+                      btnOkOnPress: () {},
+                      btnOkColor: Colors.blue,
+                      dialogType: DialogType.info)
+                  .show();
+            }
+          },
+        ),
       ),
     );
   }
